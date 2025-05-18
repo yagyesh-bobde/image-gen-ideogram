@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-st.set_page_config(page_title="Ideogram Image Generator", layout="wide")
+st.set_page_config(page_title="Ideogram Image Generator with AR", layout="wide")
 
 # Load environment variables
 R2_PUBLIC_DOMAIN = os.getenv("R2_PUBLIC_DOMAIN")
@@ -25,7 +25,7 @@ R2_PROJECT_FOLDER = os.getenv("R2_PROJECT_FOLDER")
 REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
 
 # Function to call Ideogram Turbo API
-def generate_image(prompt, api_token):
+def generate_image(prompt, api_token, is_first_or_last_page=False):
     api_url = "https://api.replicate.com/v1/models/ideogram-ai/ideogram-v2-turbo/predictions"
     headers = {
         "Authorization": f"Bearer {api_token}",
@@ -33,11 +33,16 @@ def generate_image(prompt, api_token):
         "Prefer": "wait"
     }
     
+    # Set resolution based on page type
+    # resolution = "1080x1440" if is_first_or_last_page else "1080x720"
+    # width = 1080
+    # height = 1440 if is_first_or_last_page else 720
+    aspect_ratio = "3:4" if is_first_or_last_page else "3:2"
+    
     payload = {
         "input": {
             "prompt": prompt,
-            "width": 1024,
-            "height": 1024,
+            "aspect_ratio": aspect_ratio,
             "negative_prompt": "ugly, disfigured, low quality, blurry, nsfw"
         }
     }
@@ -176,15 +181,8 @@ def main():
             }
             
             for book in data:
-                # Replace character placeholders in the book title and description
-                book['title'] = book['title'].replace('{charactername}', character_name)
-                book['description'] = book['description'].replace('{charactername}', character_name)
-                
-                # Process each page
+                # Only replace placeholders in image prompts
                 for page in book['pages']:
-                    # Replace character placeholders in the text and image prompt
-                    page['text'] = page['text'].replace('{charactername}', character_name)
-                    page['text'] = page['text'].replace('{characterage}', character_age)
                     page['imagePrompt'] = page['imagePrompt'].replace('{charactername}', character_name)
                     page['imagePrompt'] = page['imagePrompt'].replace('{characterage}', character_age)
             
@@ -201,13 +199,17 @@ def main():
             status_text.text("Initiating image generation requests...")
             for book_idx, book in enumerate(data):
                 book_title = book['title']
+                total_pages_in_book = len(book['pages'])
                 
                 for page_idx, page in enumerate(book['pages']):
                     page_num = page['pageNumber']
                     prompt = page['imagePrompt']
                     
-                    # Start image generation
-                    prediction = generate_image(prompt, replicate_api_key)
+                    # Check if this is first or last page
+                    is_first_or_last_page = page_idx == 0 or page_idx == total_pages_in_book - 1
+                    
+                    # Start image generation with appropriate resolution
+                    prediction = generate_image(prompt, replicate_api_key, is_first_or_last_page)
                     
                     # With the "Prefer: wait" header, we might get the completed result directly
                     if prediction and 'output' in prediction:
