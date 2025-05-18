@@ -113,7 +113,7 @@ def upload_to_r2(image_url, r2_configs, book_title, page_number):
         return None
 
 def main():
-    st.title("Ideogram Image Generator and R2 Uploader")
+    st.title("Ideogram Image Generator and R2 Uploader AR")
     
     # Use environment variables if available, otherwise show input fields
     api_key_default = REPLICATE_API_KEY if REPLICATE_API_KEY else ""
