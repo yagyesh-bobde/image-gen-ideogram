@@ -93,8 +93,11 @@ def upload_to_r2(image_url, r2_configs, book_title, page_number):
         sanitized_title = ''.join(c if c.isalnum() or c in ' _-' else '_' for c in book_title)
         sanitized_title = sanitized_title.replace(' ', '_')
         
+        # Add timestamp to make filename unique
+        timestamp = int(time.time() * 1000)
+        
         # Define the key (path) for the image in the bucket
-        key = f"ideogram/{sanitized_title}/page_{page_number}.jpg"
+        key = f"ideogram/{sanitized_title}/page_{page_number}_{timestamp}.jpg"
         
         # Upload the image to R2
         s3_client.upload_fileobj(
